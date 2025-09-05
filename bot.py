@@ -1774,13 +1774,13 @@ trading_engine = TradingEngine(trading_config)
 
 # Enhanced headers
 headers = {
-    "X-Dune-API-Key": "ye3xyk2FBGNzBreLeBZiAtYQp1XD3cSn",
+    "X-Dune-API-Key": "your-api-key",
     "Content-Type": "application/json",
     "User-Agent": "Professional-Trading-Bot/2.0"
 }
 
-bot_token = '8074383591:AAEvvbHyu7qRBrHmjoVBrXyHAxpkPtNf4Jc'
-chat_id = '992731953'
+bot_token = 'your-token-bot'
+chat_id = 'your-id-bot'
 
 def create_main_menu():
     """Create the main menu keyboard"""
