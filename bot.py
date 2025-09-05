@@ -120,6 +120,93 @@ class AdvancedIndicators:
     """Professional-grade technical indicators with null safety"""
 
     @staticmethod
+    def calculate_volume_profile(df: pd.DataFrame, bins: int = 24, value_area_pct: float = 0.70) -> Dict:
+        """
+        Calculate a professional-grade Volume Profile with POC, VAH, and VAL.
+        """
+        try:
+            if df is None or df.empty or not all(c in df.columns for c in ['high', 'low', 'close', 'volume']):
+                return {}
+
+            # 1. Tentukan rentang harga dan ukuran setiap 'bin' (level harga)
+            min_price = df['low'].min()
+            max_price = df['high'].max()
+            price_range = max_price - min_price
+            if price_range == 0:
+                return {}
+            
+            bin_size = price_range / bins
+            
+            # 2. Buat 'keranjang' untuk setiap level harga
+            price_bins = np.arange(min_price, max_price + bin_size, bin_size)
+            volume_per_bin = np.zeros(len(price_bins) - 1)
+
+            # 3. Distribusikan volume dari setiap candle ke level harga yang sesuai
+            #    Kita gunakan 'typical price' (H+L+C)/3 sebagai proxy harga transaksi
+            typical_price = (df['high'] + df['low'] + df['close']) / 3
+            
+            # np.digitize menempatkan setiap harga ke dalam bin yang benar secara efisien
+            bin_indices = np.digitize(typical_price, price_bins) - 1
+
+            # Agregasi volume ke setiap bin
+            for i, volume in enumerate(df['volume']):
+                # Pastikan index berada dalam rentang yang valid
+                if 0 <= bin_indices[i] < len(volume_per_bin):
+                    volume_per_bin[bin_indices[i]] += volume
+            
+            # 4. Hitung Point of Control (POC)
+            #    POC adalah level harga dengan volume tertinggi
+            poc_index = np.argmax(volume_per_bin)
+            poc_price = price_bins[poc_index] + (bin_size / 2)
+            
+            # 5. Hitung Value Area (VA), VAH, dan VAL
+            total_volume = np.sum(volume_per_bin)
+            va_volume_target = total_volume * value_area_pct
+            
+            # Mulai dari POC dan kembangkan ke atas dan bawah sampai 70% volume tercapai
+            current_va_volume = volume_per_bin[poc_index]
+            va_lower_index = va_upper_index = poc_index
+            
+            while current_va_volume < va_volume_target:
+                # Cek bin di atas dan di bawah, pilih yang volumenya lebih besar untuk ditambahkan
+                next_lower_index = va_lower_index - 1
+                next_upper_index = va_upper_index + 1
+                
+                volume_lower = volume_per_bin[next_lower_index] if next_lower_index >= 0 else -1
+                volume_upper = volume_per_bin[next_upper_index] if next_upper_index < len(volume_per_bin) else -1
+
+                if volume_lower == -1 and volume_upper == -1:
+                    break # Sudah mencapai batas atas dan bawah
+                    
+                if volume_upper > volume_lower:
+                    current_va_volume += volume_upper
+                    va_upper_index = next_upper_index
+                else:
+                    current_va_volume += volume_lower
+                    va_lower_index = next_lower_index
+
+            val_price = price_bins[va_lower_index]
+            vah_price = price_bins[va_upper_index + 1]
+
+            # 6. Susun hasil akhir
+            profile_data = {
+                price_bins[i] + (bin_size / 2): vol for i, vol in enumerate(volume_per_bin)
+            }
+
+            return {
+                'poc_price': poc_price,
+                'vah_price': vah_price,
+                'val_price': val_price,
+                'value_area_volume_pct': (current_va_volume / total_volume) if total_volume > 0 else 0,
+                'profile': profile_data # Data mentah volume per harga
+            }
+
+        except Exception as e:
+            # Ganti dengan 'logger.error' jika Anda sudah setup logger
+            print(f"Professional volume profile calculation error: {e}")
+            return {}
+
+    @staticmethod
     def safe_array_operation(array1, array2, operation='add', default_value=0):
         """Safely perform array operations with null checks"""
         try:
