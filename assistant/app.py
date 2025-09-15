@@ -560,70 +560,73 @@ class TradingEngine:
     """Professional trading execution engine with enhanced error handling"""
     
     def generate_sentiment_report(self) -> str:
-        """Menghasilkan laporan intelijen pasar yang komprehensif dan anti-rapuh."""
+        """Generate enhanced market intelligence report"""
         try:
-            # --- PERIKSA DULU APAKAH "MATA-MATA" EKONOMI KITA AKTIF ---
             if not self.economic_provider:
-                return "❌ Gagal menghasilkan laporan: Modul data ekonomi tidak aktif. Pastikan API Key di file .env sudah benar."
-
-            # --- Jika mata-mata aktif, lanjutkan seperti biasa ---
-            sentiment_score = 0
-            
-            # Ambil Data Kripto dari CoinGecko
-            btc_d_str, total3_str = "Data tidak tersedia.", "Data tidak tersedia."
+                return "❌ Gagal menghasilkan laporan: Modul data ekonomi tidak aktif."
+        
+            # Get enhanced sentiment analysis
+            sentiment_analysis = self.economic_provider.calculate_advanced_sentiment()
+        
+            # Get traditional data
             crypto_data = self.economic_provider.get_global_crypto_data()
-            if crypto_data:
-                btc_d_str = f"{crypto_data['btc_dominance']:.2f}%"
-                total3_str = f"${crypto_data['total3_market_cap']:,.0f}"
-            
-            # Ambil Data Ekonomi dari FRED
-            cpi_data_str, fed_rate_str = "Data tidak tersedia.", "Data tidak tersedia."
+            fear_greed = self.economic_provider.get_fear_greed_index()
+            funding_data = self.economic_provider.get_crypto_funding_rates_safe()
+        
             cpi_data = self.economic_provider.get_latest_cpi()
-            if cpi_data: cpi_data_str = f"{cpi_data['value']} (MoM: {cpi_data['change_mom']})"
             fed_rate_data = self.economic_provider.get_interest_rate()
-            if fed_rate_data: fed_rate_str = f"{fed_rate_data['value']} (Update: {fed_rate_data['date']})"
-            
-            # Ambil Data Kalender & Berita
-            calendar_data = self.economic_provider.get_economic_calendar()
-            events_today_str = "\n".join([f"• {e}" for e in calendar_data['today']])
-            next_cpi = calendar_data['next_cpi']
-            next_fomc = calendar_data['next_fomc']
-            
-            # 4. Data Berita dari NewsAPI
+            calendar_data = self.economic_provider.get_economic_calendar_multi_source()
             news_list = self.economic_provider.get_market_news()
+        
+            # Format data strings
+            btc_d_str = f"{crypto_data['btc_dominance']:.2f}%" if crypto_data else "N/A"
+            total3_str = f"${crypto_data['total3_market_cap']:,.0f}" if crypto_data else "N/A"
+            fng_str = f"{fear_greed['value']} ({fear_greed['classification']})" if fear_greed else "N/A"
+            funding_str = funding_data['btc_funding_rate'] if funding_data else "N/A"
+        
+            cpi_data_str = f"{cpi_data['value']} (MoM: {cpi_data['change_mom']})" if cpi_data else "N/A"
+            fed_rate_str = f"{fed_rate_data['value']}" if fed_rate_data else "N/A"
+        
+            events_today_str = "\n".join([f"• {e}" for e in calendar_data['today']])
             news_str = "\n".join(news_list)
-
-            # Mesin Kesimpulan Sederhana
-            final_sentiment = "Netral 😐 - Pasar menunggu katalis berikutnya."
-            if sentiment_score > 0:
-                final_sentiment = "Condong ke Bullish 🐂 - Aliran dana positif ke Altcoin."
-            elif sentiment_score < 0:
-                final_sentiment = "Condong ke Bearish 🐻 - Aliran dana cenderung ke BTC/Safe Haven."
-
-            # Susun Laporan Intelijen
+        
+            # Build enhanced report
             report_msg = (
                 f"📊 **LAPORAN INTELIJEN PASAR** 📊\n"
                 f"{datetime.now(timezone('Asia/Jakarta')).strftime('%A, %d %B %Y %H:%M WIB')}\n"
-                f"{'='*30}\n\n"
-                f"**Kesimpulan Sentimen:** **{final_sentiment}**\n\n"
-                f"**1. Data Kripto (via CoinGecko):**\n"
-                f"• BTC Dominance: **{btc_d_str}**\n"
-                f"• Altcoin Market Cap (TOTAL3): **{total3_str}**\n\n"
-                f"**2. Data Ekonomi Makro (AS):**\n"
-                f"• Inflasi (CPI Terakhir): **{cpi_data_str}**\n"
-                f"• Suku Bunga (Fed Rate): **{fed_rate_str}**\n\n"
-                f"**3. Jadwal Ekonomi Penting Hari Ini (USD):**\n"
-                f"**Acara Penting Hari Ini:**\n{events_today_str}\n\n"
-                f"**Agenda Penting Mendatang:**\n"
-                f"• Rilis CPI Berikutnya: **{next_cpi}**\n"
-                f"• Rapat FOMC Berikutnya: **{next_fomc}**\n\n"
-                f"**4. Berita Utama Pasar Global:**\n"
-                f"{news_str}"
+                f"{'='*40}\n\n"
+            
+                f"**🎯 SENTIMENT ANALYSIS: {sentiment_analysis['overall']}**\n"
+                f"**Skor Sentiment: {sentiment_analysis['score']:+d}**\n\n"
+            
+                f"**📈 FAKTOR SENTIMENT:**\n"
             )
+        
+            for factor in sentiment_analysis['factors']:
+                report_msg += f"{factor}\n"
+        
+            report_msg += (
+                f"\n**🔍 DATA TEKNIS:**\n"
+                f"• BTC Dominance: **{btc_d_str}**\n"
+                f"• Altcoin Cap (TOTAL3): **{total3_str}**\n"
+                f"• Fear & Greed Index: **{fng_str}**\n"
+                f"• BTC Funding Rate: **{funding_str}**\n\n"
+            
+                f"**🏛️ DATA EKONOMI MAKRO:**\n"
+                f"• CPI (Inflasi): **{cpi_data_str}**\n"
+                f"• Fed Funds Rate: **{fed_rate_str}**\n\n"
+            
+                f"**📅 KALENDER EKONOMI:**\n"
+                f"• CPI Berikutnya: **{calendar_data.get('next_cpi', 'N/A')}**\n"
+                f"• FOMC Berikutnya: **{calendar_data.get('next_fomc', 'N/A')}**\n\n"
+            
+                f"**📰 BERITA PASAR:**\n{news_str}"
+            )
+        
             return report_msg
-
+        
         except Exception as e:
-            logger.error(f"Gagal membuat laporan intelijen: {e}", exc_info=True)
+            logger.error(f"Failed to generate sentiment report: {e}", exc_info=True)
             return "❌ Gagal menghasilkan laporan intelijen."
 
     def update_config(self, key: str, value: str) -> str:
