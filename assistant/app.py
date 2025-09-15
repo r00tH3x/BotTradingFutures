@@ -1,4 +1,3 @@
-
 #file app.py
 import ccxt
 import pandas as pd
