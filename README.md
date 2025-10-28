@@ -89,8 +89,15 @@ pip install ccxt pandas numpy talib requests python-telegram-bot pytz certifi ur
 
 - Configure your API keys in `.env` file:
   ```ini
-  FRED_API_KEY=your_key
-  NEWS_API_KEY=your_key
+  # Kunci API Eksternal
+  FRED_API_KEY="your-api-key"
+  NEWS_API_KEY="your-api-key"
+  DUNE_API_KEY="your-api-key"
+  FINNHUB_API_KEY="your-api-key"
+
+  # Konfigurasi Telegram
+  TELEGRAM_BOT_TOKEN="your-bot-token"
+  ADMIN_CHAT_ID="your-bot-id"
   ```
 
 - Risk parameters (in `TradingConfig`):
@@ -107,7 +114,7 @@ pip install ccxt pandas numpy talib requests python-telegram-bot pytz certifi ur
 
 Run the bot:
 ```bash
-python -m assistant.app
+python bot.py
 ```
 
 ### Workflow
